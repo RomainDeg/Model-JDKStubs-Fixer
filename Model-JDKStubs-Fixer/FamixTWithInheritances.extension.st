@@ -10,6 +10,8 @@ FamixTWithInheritances >> replaceSuperclassWith: aFamixTWithInheritances [
 	self superInheritances
 		remove: toRemove
 		ifAbsent: [ Error signal: 'Should not happen.' ].
+
+	"remove from model"
 	self mooseModel remove: toRemove.
 
 	"new inheritance"
@@ -18,5 +20,4 @@ FamixTWithInheritances >> replaceSuperclassWith: aFamixTWithInheritances [
 		subclass: self;
 		superclass: aFamixTWithInheritances.
 	self addSuperInheritance: inheritance.
-	1 halt
 ]
