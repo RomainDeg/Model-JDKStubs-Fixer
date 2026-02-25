@@ -9,13 +9,9 @@ Class {
 BaselineOfModelJDKStubsFixer >> baseline: spec [
 
 	<baseline>
-	spec for: #common do: [ spec package: 'Model-JDKStubs-Fixer' ]
-]
-
-{ #category : 'baselines' }
-BaselineOfModelJDKStubsFixer >> mooseTestResourcesJavaModels: spec [
-
-	spec baseline: 'MooseTestResourcesJavaModels' with: [
-			spec repository:
-				'github://RomainDeg/Moose-TestResources-JavaModels:main/src' ]
+	spec for: #common do: [
+			spec
+				package: 'Model-JDKStubs-Fixer';
+				package: 'Model-JDKStubs-Fixer-Tests'
+				with: [ spec requires: #( 'Model-JDKStubs-Fixer' ) ] ]
 ]
