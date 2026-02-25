@@ -4,7 +4,7 @@ Class {
 	#instVars : [
 		'jdkModel',
 		'modelToFix',
-		'listTaMere'
+		'classesWithoutEquivalents'
 	],
 	#category : 'Model-JDKStubs-Fixer',
 	#package : 'Model-JDKStubs-Fixer'
@@ -55,7 +55,7 @@ ModelJDKFixer >> getClassesInJDKMatching: aMooseGroup [
 			(jdkModel allUsing: FamixTWithInheritances)
 				detect: [ :ee | e mooseName = ee mooseName ]
 				ifFound: [ :ee | dict at: ee put: current ]
-				ifNone: [ listTaMere add: current ] ].
+				ifNone: [ classesWithoutEquivalents add: current ] ].
 
 
 	^ dict
@@ -64,7 +64,7 @@ ModelJDKFixer >> getClassesInJDKMatching: aMooseGroup [
 { #category : 'initialization' }
 ModelJDKFixer >> initialize [ 
 
-	listTaMere := OrderedCollection new.
+	classesWithoutEquivalents := OrderedCollection new.
 ]
 
 { #category : 'accessing' }
