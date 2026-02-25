@@ -97,6 +97,7 @@ ModelJDKFixerTest >> testFixClass [
 		                e name = 'Method' ]).
 	fixer fixClass: association.
 
+	self assert: userModelInheritance superclass isNil.
 	self assert: userModelInheritance subclass isNil.
 
 	self assert: userModel allInheritanceDefinitions size equals: 1.
@@ -107,4 +108,5 @@ ModelJDKFixerTest >> testFixClass [
 	self
 		assert: userModelInheritance superclass mooseName
 		equals: 'java.lang.reflect.AccessibleObject'.
+	self assert: userModelInheritance subclass equals: userModelSubclass
 ]
