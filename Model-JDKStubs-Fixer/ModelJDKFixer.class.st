@@ -37,7 +37,7 @@ ModelJDKFixer >> fixClass: anAssociation [
 
 	realSuperclass
 		ifNil: [ 1 halt "we'll see if it happens" ]
-		ifNotNil: [ 1halt. classToFix replaceSuperclassWith: realSuperclass ]
+		ifNotNil: [ classToFix replaceSuperclassWith: realSuperclass ]
 ]
 
 { #category : 'as yet unclassified' }
