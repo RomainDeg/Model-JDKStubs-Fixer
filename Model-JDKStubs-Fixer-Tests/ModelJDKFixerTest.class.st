@@ -16,11 +16,34 @@ Class {
 { #category : 'as yet unclassified' }
 ModelJDKFixerTest >> createFakeJDKModel [
 
-	| packages temp1 temp2 model superclass userClass inheritance |
+	| packages temp1 temp2 model superclass userClass inheritance method |
 	model := FamixJavaModel new.
 
+	"adding resources for method fixing"
 	packages := OrderedCollection new.
 	temp1 := model newPackageNamed: 'java'.
+	temp2 := model newPackageNamed: 'util'.
+	temp2 parentPackage: temp1.
+
+	superclass := model newClassNamed: 'Hashtable'.
+	superclass typeContainer: temp2.
+	userClass := model newClassNamed: 'Properties'.
+
+	inheritance := model newInheritance.
+	inheritance
+		subclass: userClass;
+		superclass: superclass.
+
+	method := model newMethodNamed: 'keys'.
+	method parentType: superclass.
+	
+	userClass := model newClassNamed: 'Enumeration'.
+	userClass typeContainer: temp2.
+	
+	method typing: model newEntityTyping.
+	method typing declaredType: userClass.
+
+	"adding resources for class fixing"
 	temp2 := model newPackageNamed: 'lang'.
 	temp2 parentPackage: temp1.
 	temp1 := model newPackageNamed: 'reflect'.
@@ -35,18 +58,41 @@ ModelJDKFixerTest >> createFakeJDKModel [
 	inheritance
 		subclass: userClass;
 		superclass: superclass.
-		
+
 	^ model
 ]
 
 { #category : 'as yet unclassified' }
 ModelJDKFixerTest >> createUserModel [
 
-	| packages temp1 temp2 model superclass userClass inheritance |
+	| packages temp1 temp2 model superclass userClass inheritance method |
 	model := FamixJavaModel new.
 
+	"adding resources for method fixing"
 	packages := OrderedCollection new.
 	temp1 := model newPackageNamed: 'java'.
+	temp2 := model newPackageNamed: 'util'.
+	temp2 parentPackage: temp1.
+
+	superclass := model newClassNamed: 'Hashtable'.
+	superclass typeContainer: temp2.
+	userClass := model newClassNamed: 'Properties'.
+
+	inheritance := model newInheritance.
+	inheritance
+		subclass: userClass;
+		superclass: superclass.
+
+	method := model newMethodNamed: 'keys'.
+	method parentType: userClass.
+	
+	userClass := model newClassNamed: 'Enumeration'.
+	userClass typeContainer: temp2.
+	
+	method typing: model newEntityTyping.
+	method typing declaredType: userClass.
+	
+	"adding resources for class fixing"
 	temp2 := model newPackageNamed: 'lang'.
 	temp2 parentPackage: temp1.
 	temp1 := model newPackageNamed: 'reflect'.
@@ -82,10 +128,12 @@ ModelJDKFixerTest >> setUp [
 { #category : 'tests' }
 ModelJDKFixerTest >> testFixClass [
 
-	| association userModelInheritance userModelSubclass |
-	self assert: userModel allInheritanceDefinitions size equals: 1.
-	userModelInheritance := userModel allInheritanceDefinitions anyOne.
+	| amountOfInheritance association userModelInheritance userModelSubclass |
+	amountOfInheritance := userModel allInheritanceDefinitions size.
+	userModelInheritance := userModel allInheritanceDefinitions detect: [
+		                        :i | i source name = 'Method' ].
 	userModelSubclass := userModelInheritance subclass.
+
 	self
 		assert: userModelInheritance superclass mooseName
 		equals: 'java.lang.reflect.Executable'.
@@ -100,13 +148,35 @@ ModelJDKFixerTest >> testFixClass [
 	self assert: userModelInheritance superclass isNil.
 	self assert: userModelInheritance subclass isNil.
 
-	self assert: userModel allInheritanceDefinitions size equals: 1.
+	self
+		assert: userModel allInheritanceDefinitions size
+		equals: amountOfInheritance.
 	self
 		deny: userModel allInheritanceDefinitions anyOne
 		equals: userModelInheritance.
-	userModelInheritance := userModel allInheritanceDefinitions anyOne.
+	userModelInheritance := userModel allInheritanceDefinitions detect: [
+		                        :i | i source name = 'Method' ].
 	self
 		assert: userModelInheritance superclass mooseName
 		equals: 'java.lang.reflect.AccessibleObject'.
 	self assert: userModelInheritance subclass equals: userModelSubclass
+]
+
+{ #category : 'tests' }
+ModelJDKFixerTest >> testFixMethod [
+
+	| methodToFix wrongParentType goodParentType  |
+	methodToFix := userModel allMethods detect: [ :m | m name = 'keys' ].
+	wrongParentType := methodToFix parentType.
+	goodParentType := wrongParentType superclass.
+
+	self assert: wrongParentType methods isNotEmpty.
+	self assert: goodParentType methods isEmpty.
+	self assert: methodToFix parentType equals: wrongParentType.
+
+	fixer fixMethod: methodToFix.
+
+	self assert: wrongParentType methods isEmpty.
+	self assert: goodParentType methods isNotEmpty.
+	self assert: methodToFix parentType equals: goodParentType.
 ]
