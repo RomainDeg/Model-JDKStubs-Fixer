@@ -82,6 +82,88 @@ ModelJDKFixer >> fixMethods: aCollection [
 ]
 
 { #category : 'as yet unclassified' }
+ModelJDKFixer >> fixMethods: methods inClass: class [
+
+	| methodsToFix sortingBlock indexesDict sortedIndexes |
+	"what matters to us is the invocations, so we'll work with that"
+	sortingBlock := [ :a :b |
+		                a isStub not
+			                ifTrue: [ true ]
+			                ifFalse: [
+					                b isStub not
+						                ifTrue: [ false ]
+						                ifFalse: [
+								                a incomingInvocations size
+								                > b incomingInvocations size
+									                ifTrue: [ true ]
+									                ifFalse: [
+										                a incomingInvocations first mooseName
+										                > b incomingInvocations first mooseName ] ] ] ].
+
+	methodsToFix := methods sorted: sortingBlock.
+
+	indexesDict := Dictionary new.
+	methodsToFix do: [ :m |
+		indexesDict at: m put: (class methods collector indexOf: m) ].
+	1haltIf: [ indexesDict values isSorted not ].
+	sortedIndexes := indexesDict values sorted.
+
+	"last will be swapped by the other operations?"
+	methodsToFix allButLast doWithIndex: [ :m :i |
+			class methods collector
+				swap: (indexesDict at: m)
+				with: (sortedIndexes at: i) ]
+]
+
+{ #category : 'as yet unclassified' }
+ModelJDKFixer >> fixOrderOfMethodsInClass: classes [
+
+	| bag |
+	bag := Bag newFrom: (classes methods collect: #mooseName).
+	
+	bag sortedCounts
+	
+]
+
+{ #category : 'as yet unclassified' }
+ModelJDKFixer >> fixOrderOfMethodsInClasses: classes [
+
+	| methodsNameToFix methodsToFix |
+	methodsNameToFix := ((Bag newFrom:
+		                      (classes methods collect: #mooseName))
+		                     sortedCounts select: [ :assoc | assoc key >= 2 ])
+		                    collect: #value.
+	methodsToFix := OrderedCollection new.
+	methodsNameToFix do: [ :name |
+			| col |
+			methodsToFix add:
+				(classes methods select: [ :m | m mooseName = name ]) ].
+
+	methodsToFix do: [ :m | self fixMethods: m inClass: classes ]
+]
+
+{ #category : 'as yet unclassified' }
+ModelJDKFixer >> fixOrderOfMethodsWhenBothDefinedAndStubExists [
+	"Some MODEL classes have SEVERAL methods with the SAME MOOSENAME, SEVERAL stubs and the other being a MODEL method.
+As always, it's a VerveineJ bug, and as always, I don't want to work on this **** (I eventually will anyway).
+This method swaps the orders of the array holding those methods, so that you always get first the defined method, second the stub.
+It's not ideal, but it fixes my current ordeal and it's super easy to implement, so it'll do."
+
+	| classesToFix |
+	classesToFix := modelToFix allModelClasses select: [ :c |
+			                | b |
+			                c methods
+				                ifNotEmpty: [
+						                b := Bag newFrom:
+							                     (c methods collect: #mooseName).
+						                b sortedCounts first key >= 2 ]
+				                ifEmpty: [ false ] ].
+
+	1 halt.
+	classesToFix do: [ :c |  self fixOrderOfMethodsInClasses: c ]
+]
+
+{ #category : 'as yet unclassified' }
 ModelJDKFixer >> getClassesInJDKMatching: aMooseGroup [
 
 	| dict current |
