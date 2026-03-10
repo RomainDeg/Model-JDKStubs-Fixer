@@ -48,6 +48,30 @@ ModelJDKFixer >> fixClasses: aCollection [
 ]
 
 { #category : 'as yet unclassified' }
+ModelJDKFixer >> fixEntityTypingsWithoutSource [
+	"Some entity typings are typing nothing. That's funny, but not for me, so we're killing those."
+
+	| entitiesToKill |
+	entitiesToKill := modelToFix select: [ :e |
+		                  e class = FamixJavaEntityTyping and: [
+			                  e source isNil ] ].
+
+	entitiesToKill do: [ :e |
+			| target |
+			target := e target.
+			target incomingTypings remove: e ifAbsent: [ "wtf" ].
+			modelToFix silentlyRemove: e ]
+]
+
+{ #category : 'as yet unclassified' }
+ModelJDKFixer >> fixForBridgeExpOnModel: model [ 
+
+	modelToFix := model.
+	self fixOrderOfMethodsWhenBothDefinedAndStubExists.
+	self fixVisibilityOfInterfaceMethods 
+]
+
+{ #category : 'as yet unclassified' }
 ModelJDKFixer >> fixMethod: methodToFix [
 
 	| jdkEquivalentParentType jdkEquivalentMethod newParentType |
@@ -161,6 +185,30 @@ It's not ideal, but it fixes my current ordeal and it's super easy to implement,
 
 	1 halt.
 	classesToFix do: [ :c |  self fixOrderOfMethodsInClasses: c ]
+]
+
+{ #category : 'as yet unclassified' }
+ModelJDKFixer >> fixVisibilityOfInterfaceMethods [
+	"I hate VVJ and JDT and everything in between these things.
+	With that said, this method makes every method from an interface which isn't static or default an abstract method (per Java specification, I'd paste a link right there if I still gave a fuck.
+	Also, if a method isn't public, it has package visibility."
+
+	| methodsToFix |
+	methodsToFix := (modelToFix select: [ :e |
+		                 e class = FamixJavaInterface ]) flatCollect: [ :i |
+		                i methods ].
+
+	methodsToFix do: [ :m |
+			(m isClassSide or: [ m kind isNotNil and: [ m kind = 'default' ] ])
+				ifFalse: [ m isAbstract: true ].
+			m sourceAnchor ifNotNil: [
+					| explicit |
+					explicit := false.
+					{ 'public'. 'private'. 'protected' } do: [ :v |
+							(m sourceAnchor beginsWith: v) ifTrue: [
+									explicit := true.
+									m visibility: v ].
+							explicit ifFalse: [ m visibility: 'public' ] ] ] ]
 ]
 
 { #category : 'as yet unclassified' }
